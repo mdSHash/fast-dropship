@@ -1,0 +1,223 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Fix Admin Session - Fast Dropship</title>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            max-width: 800px;
+            margin: 50px auto;
+            padding: 20px;
+            background: #0F172A;
+            color: #fff;
+        }
+        .container {
+            background: rgba(255, 255, 255, 0.05);
+            border: 1px solid rgba(255, 255, 255, 0.1);
+            border-radius: 12px;
+            padding: 30px;
+        }
+        h1 {
+            color: #A855F7;
+            margin-bottom: 10px;
+        }
+        .status {
+            padding: 15px;
+            border-radius: 8px;
+            margin: 20px 0;
+        }
+        .success {
+            background: rgba(16, 185, 129, 0.2);
+            border: 1px solid #10B981;
+        }
+        .error {
+            background: rgba(239, 68, 68, 0.2);
+            border: 1px solid #EF4444;
+        }
+        .warning {
+            background: rgba(245, 158, 11, 0.2);
+            border: 1px solid #F59E0B;
+        }
+        button {
+            background: linear-gradient(to right, #A855F7, #EC4899);
+            color: white;
+            border: none;
+            padding: 12px 24px;
+            border-radius: 8px;
+            cursor: pointer;
+            font-size: 16px;
+            margin: 10px 5px;
+        }
+        button:hover {
+            opacity: 0.9;
+        }
+        .info {
+            background: rgba(59, 130, 246, 0.2);
+            border: 1px solid #3B82F6;
+            padding: 15px;
+            border-radius: 8px;
+            margin: 20px 0;
+        }
+        pre {
+            background: rgba(0, 0, 0, 0.3);
+            padding: 15px;
+            border-radius: 8px;
+            overflow-x: auto;
+        }
+        code {
+            color: #10B981;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <h1>🔧 Fix Admin Session</h1>
+        <p>This tool will help you fix admin features not showing up in Fast Dropship.</p>
+
+        <div id="status"></div>
+
+        <div class="info">
+            <h3>Current Status:</h3>
+            <div id="currentStatus">Checking...</div>
+        </div>
+
+        <h3>Quick Fixes:</h3>
+        <button onclick="clearAndRefresh()">1. Clear Cache & Refresh</button>
+        <button onclick="fetchUserInfo()">2. Fetch User Info</button>
+        <button onclick="showUserInfo()">3. Show Current User</button>
+        <button onclick="goToLogin()">4. Go to Login Page</button>
+
+        <div class="info" style="margin-top: 30px;">
+            <h3>Manual Steps:</h3>
+            <ol>
+                <li>Click "Clear Cache & Refresh" button above</li>
+                <li>If that doesn't work, click "Go to Login Page"</li>
+                <li>Log out and log back in as admin</li>
+                <li>After logging in, you should see:
+                    <ul>
+                        <li>✅ "Created By" columns in order/delivery/transaction pages</li>
+                        <li>✅ "Assigned To" columns in order pages</li>
+                        <li>✅ "Assign to User" dropdown in Add Order form</li>
+                    </ul>
+                </li>
+            </ol>
+        </div>
+
+        <div class="info">
+            <h3>Expected User Info (Admin):</h3>
+            <pre><code>{
+  "id": 1,
+  "username": "admin",
+  "email": "admin@example.com",
+  "role": "admin",
+  "is_active": true
+}</code></pre>
+        </div>
+    </div>
+
+    <script>
+        // Check current status on load
+        window.onload = function() {
+            checkStatus();
+        };
+
+        function checkStatus() {
+            const user = localStorage.getItem('user');
+            const token = localStorage.getItem('token');
+            const statusDiv = document.getElementById('currentStatus');
+
+            if (!token) {
+                statusDiv.innerHTML = '<div class="error">❌ Not logged in (no token found)</div>';
+                return;
+            }
+
+            if (!user) {
+                statusDiv.innerHTML = '<div class="warning">⚠️ Logged in but user info not cached<br><small>Click "Fetch User Info" button above</small></div>';
+                return;
+            }
+
+            try {
+                const userObj = JSON.parse(user);
+                if (userObj.role === 'admin') {
+                    statusDiv.innerHTML = `<div class="success">✅ Logged in as Admin: ${userObj.username}</div>`;
+                } else {
+                    statusDiv.innerHTML = `<div class="warning">⚠️ Logged in as Regular User: ${userObj.username}<br><small>You need to log in as an admin user to see admin features</small></div>`;
+                }
+            } catch (e) {
+                statusDiv.innerHTML = '<div class="error">❌ Invalid user data in cache</div>';
+            }
+        }
+
+        function clearAndRefresh() {
+            localStorage.removeItem('user');
+            document.getElementById('status').innerHTML = '<div class="status success">✅ Cache cleared! Refreshing page...</div>';
+            setTimeout(() => {
+                window.location.reload();
+            }, 1000);
+        }
+
+        async function fetchUserInfo() {
+            const token = localStorage.getItem('token');
+            if (!token) {
+                document.getElementById('status').innerHTML = '<div class="status error">❌ No token found. Please log in first.</div>';
+                return;
+            }
+
+            try {
+                const response = await fetch('http://localhost:8000/api/auth/me', {
+                    headers: {
+                        'Authorization': `Bearer ${token}`
+                    }
+                });
+
+                if (response.ok) {
+                    const user = await response.json();
+                    localStorage.setItem('user', JSON.stringify(user));
+                    document.getElementById('status').innerHTML = `<div class="status success">✅ User info fetched and cached!<br><pre>${JSON.stringify(user, null, 2)}</pre></div>`;
+                    checkStatus();
+                } else {
+                    document.getElementById('status').innerHTML = '<div class="status error">❌ Failed to fetch user info. Token may be expired.</div>';
+                }
+            } catch (error) {
+                document.getElementById('status').innerHTML = `<div class="status error">❌ Error: ${error.message}<br><small>Make sure the backend is running at http://localhost:8000</small></div>`;
+            }
+        }
+
+        function showUserInfo() {
+            const user = localStorage.getItem('user');
+            const token = localStorage.getItem('token');
+            
+            if (!user && !token) {
+                document.getElementById('status').innerHTML = '<div class="status error">❌ No user data found. Please log in.</div>';
+                return;
+            }
+
+            let html = '<div class="status info"><h4>Current Session Data:</h4>';
+            
+            if (token) {
+                html += `<p><strong>Token:</strong> ${token.substring(0, 50)}...</p>`;
+            }
+            
+            if (user) {
+                try {
+                    const userObj = JSON.parse(user);
+                    html += `<p><strong>User Info:</strong></p><pre>${JSON.stringify(userObj, null, 2)}</pre>`;
+                } catch (e) {
+                    html += '<p><strong>User Info:</strong> Invalid JSON</p>';
+                }
+            } else {
+                html += '<p><strong>User Info:</strong> Not cached</p>';
+            }
+            
+            html += '</div>';
+            document.getElementById('status').innerHTML = html;
+        }
+
+        function goToLogin() {
+            window.location.href = 'http://localhost:3000/login';
+        }
+    </script>
+</body>
+</html>
