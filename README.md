@@ -155,7 +155,7 @@
 
 1. **Clone the repository**
 ```bash
-git clone https://github.com/yourusername/fast-dropship.git
+git clone [https://github.com/mdSHash/fast-dropship.git/]
 cd fast-dropship
 ```
 
