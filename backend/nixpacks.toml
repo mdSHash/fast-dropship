@@ -1,15 +1,11 @@
 [phases.setup]
 nixPkgs = ["python311", "postgresql"]
-aptPkgs = ["python3-dev", "libpq-dev"]
 
 [phases.install]
 cmds = [
-  "python3.11 -m pip install --upgrade pip",
+  "pip install --upgrade pip setuptools wheel",
   "pip install -r requirements.txt"
 ]
-
-[phases.build]
-cmds = []
 
 [start]
 cmd = "uvicorn app.main:app --host 0.0.0.0 --port ${PORT:-8000}"
